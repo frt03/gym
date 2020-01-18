@@ -8,7 +8,7 @@ class HopperEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         mujoco_env.MujocoEnv.__init__(self, 'hopper.xml', 4)
         utils.EzPickle.__init__(self)
 
-    def step(self, a):
+    def step(self, action):
         old_ob = self._get_obs()
         self.do_simulation(action, self.frame_skip)
         ob = self._get_obs()
