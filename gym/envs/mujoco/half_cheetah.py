@@ -2,21 +2,33 @@ import numpy as np
 from gym import utils
 from gym.envs.mujoco import mujoco_env
 
+
 class HalfCheetahEnv(mujoco_env.MujocoEnv, utils.EzPickle):
     def __init__(self):
         mujoco_env.MujocoEnv.__init__(self, 'half_cheetah.xml', 5)
         utils.EzPickle.__init__(self)
 
     def step(self, action):
-        xposbefore = self.sim.data.qpos[0]
+        start_ob = self._get_obs()
+        reward_run = start_ob[8]
+
         self.do_simulation(action, self.frame_skip)
-        xposafter = self.sim.data.qpos[0]
         ob = self._get_obs()
-        reward_ctrl = - 0.1 * np.square(action).sum()
-        reward_run = (xposafter - xposbefore)/self.dt
-        reward = reward_ctrl + reward_run
+        if getattr(self, 'action_space', None):
+            action = np.clip(action, self.action_space.low, self.action_space.high)
+        # xposbefore = self.sim.data.qpos[0]
+        # self.do_simulation(action, self.frame_skip)
+        # xposafter = self.sim.data.qpos[0]
+        # ob = self._get_obs()
+        # reward_ctrl = - 0.1 * np.square(action).sum()
+        reward_ctrl = -0.1 * np.square(action).sum()
+
+        # reward_run = (xposafter - xposbefore)/self.dt
+        # reward = reward_ctrl + reward_run
+        reward = reward_run + reward_ctrl
         done = False
-        return ob, reward, done, dict(reward_run=reward_run, reward_ctrl=reward_ctrl)
+        # return ob, reward, done, dict(reward_run=reward_run, reward_ctrl=reward_ctrl)
+        return ob, reward, done, {}
 
     def _get_obs(self):
         return np.concatenate([
