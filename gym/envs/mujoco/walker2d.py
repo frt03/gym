@@ -25,12 +25,13 @@ class Walker2dEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         # reward -= 1e-3 * np.square(a).sum()
         # done = not (height > 0.8 and height < 2.0 and ang > -1.0 and ang < 1.0)
         # ob = self._get_obs()
-        reward_ctrl = -0.1 * np.square(action).sum()
-        reward_run = old_ob[8]
-        reward_height = -3.0 * np.square(old_ob[0] - 1.3)
-        reward = reward_run + reward_ctrl + reward_height + 1
+        reward_ctrl = - 1e-3 * np.square(action).sum()
+        reward_run = ob[8]
+        reward = reward_run + reward_ctrl + 1
 
-        done = False
+        height = ob[0]
+        ang = ob[1]
+        done = not (height > 0.8 and height < 2.0 and ang > -1.0 and ang < 1.0)
         return ob, reward, done, {}
 
     def _get_obs(self):

@@ -25,12 +25,13 @@ class HopperEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         # s = self.state_vector()
         # done = not (np.isfinite(s).all() and (np.abs(s[2:]) < 100).all() and (height > .7) and (abs(ang) < .2))
         # ob = self._get_obs()
-        reward_ctrl = -0.1 * np.square(action).sum()
-        reward_run = old_ob[5]
-        reward_height = -3.0 * np.square(old_ob[0] - 1.3)
-        reward = reward_run + reward_ctrl + reward_height + 1
+        reward_ctrl = - 1e-3 * np.square(action).sum()
+        reward_run = ob[5]
+        reward = reward_run + reward_ctrl + 1
 
-        done = False
+        height = ob[0]
+        ang = ob[1]
+        done = not (np.isfinite(ob).all() and (np.abs(ob[1:]) < 100).all() and (height > .7) and (abs(ang) < .2))
         return ob, reward, done, {}
 
     def _get_obs(self):
