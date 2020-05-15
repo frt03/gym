@@ -9,37 +9,26 @@ class AntEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         utils.EzPickle.__init__(self)
 
     def step(self, action):
+        # xposbefore = self.get_body_com("torso")[0]
+        old_ob = self._get_obs()
         self.do_simulation(action, self.frame_skip)
-        comvel = self.get_body_comvel("torso")
-        forward_reward = comvel[0]
-
+        # xposafter = self.get_body_com("torso")[0]
         if getattr(self, 'action_space', None):
-            action = np.clip(
-                action, self.action_space.low,
-                self.action_space.high
-            )
-            lb, ub = self.action_space.low, self.action_space.high
-        else:
-            lb, ub = -1, 1
-        scaling = (ub - lb) * 0.5
-        ctrl_cost = 0.5 * 1e-2 * np.sum(np.square(action / scaling))
-        contact_cost = 0.
-
-        survive_reward = 0.05
-        reward = forward_reward - ctrl_cost - contact_cost + survive_reward
+            action = np.clip(action, self.action_space.low, self.action_space.high)
         ob = self._get_obs()
-        notdone = np.isfinite(ob[:29]).all() and ob[2] >= 0.2 and ob[2] <= 1.0
-        done = not notdone
+
+        reward_ctrl = -0.1 * np.square(action).sum()
+        reward_run = old_ob[13]
+        reward_height = -3.0 * np.square(old_ob[0] - 0.57)
+        reward = reward_run + reward_ctrl + reward_height + 1.0  # 1.0 alive
+        done = False
         return ob, reward, done, {}
 
     def _get_obs(self):
         return np.concatenate([
-            self.model.data.qpos.flat,  # 15
-            self.model.data.qvel.flat,  # 14
-            # np.clip(self.model.data.cfrc_ext, -1, 1).flat,  # 84
-            self.get_body_xmat("torso").flat,  # 9
-            self.get_body_com("torso"),  # 3
-            self.get_body_comvel("torso"),  # 3
+            self.sim.data.qpos.flat[2:],
+            self.sim.data.qvel.flat,
+            # np.clip(self.sim.data.cfrc_ext, -1, 1).flat,
         ])
 
     def reset_model(self):
