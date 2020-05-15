@@ -9,35 +9,37 @@ class AntEnv(mujoco_env.MujocoEnv, utils.EzPickle):
         utils.EzPickle.__init__(self)
 
     def step(self, action):
-        # xposbefore = self.get_body_com("torso")[0]
-        old_ob = self._get_obs()
         self.do_simulation(action, self.frame_skip)
-        # xposafter = self.get_body_com("torso")[0]
-        if getattr(self, 'action_space', None):
-            action = np.clip(action, self.action_space.low, self.action_space.high)
-        ob = self._get_obs()
+        comvel = self.get_body_comvel("torso")
+        forward_reward = comvel[0]
 
-        # forward_reward = (xposafter - xposbefore)/self.dt
-        # ctrl_cost = .5 * np.square(a).sum()
-        # contact_cost = 0.5 * 1e-3 * np.sum(np.square(np.clip(self.sim.data.cfrc_ext, -1, 1)))
-        # survive_reward = 1.0
-        # reward = forward_reward - ctrl_cost - contact_cost + survive_reward
-        # state = self.state_vector()
-        # notdone = np.isfinite(state).all() \ and state[2] >= 0.2 and state[2] <= 1.0
-        # done = not notdone
-        # ob = self._get_obs()
-        reward_ctrl = -0.1 * np.square(action).sum()
-        reward_run = old_ob[13]
-        reward_height = -3.0 * np.square(old_ob[0] - 0.57)
-        reward = reward_run + reward_ctrl + reward_height + 1.0  # 1.0 alive
-        done = False
+        if getattr(self, 'action_space', None):
+            action = np.clip(
+                action, self.action_space.low,
+                self.action_space.high
+            )
+            lb, ub = self.action_space.low, self.action_space.high
+        else:
+            lb, ub = -1, 1
+        scaling = (ub - lb) * 0.5
+        ctrl_cost = 0.5 * 1e-2 * np.sum(np.square(action / scaling))
+        contact_cost = 0.
+
+        survive_reward = 0.05
+        reward = forward_reward - ctrl_cost - contact_cost + survive_reward
+        ob = self._get_obs()
+        notdone = np.isfinite(ob[:29]).all() and ob[2] >= 0.2 and ob[2] <= 1.0
+        done = not notdone
         return ob, reward, done, {}
 
     def _get_obs(self):
         return np.concatenate([
-            self.sim.data.qpos.flat[2:],
-            self.sim.data.qvel.flat,
-            # np.clip(self.sim.data.cfrc_ext, -1, 1).flat,
+            self.model.data.qpos.flat,  # 15
+            self.model.data.qvel.flat,  # 14
+            # np.clip(self.model.data.cfrc_ext, -1, 1).flat,  # 84
+            self.get_body_xmat("torso").flat,  # 9
+            self.get_body_com("torso"),  # 3
+            self.get_body_comvel("torso"),  # 3
         ])
 
     def reset_model(self):
