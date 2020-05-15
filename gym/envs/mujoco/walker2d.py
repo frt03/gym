@@ -16,15 +16,6 @@ class Walker2dEnv(mujoco_env.MujocoEnv, utils.EzPickle):
 
         if getattr(self, 'action_space', None):
             action = np.clip(action, self.action_space.low, self.action_space.high)
-        # posbefore = self.sim.data.qpos[0]
-        # self.do_simulation(a, self.frame_skip)
-        # posafter, height, ang = self.sim.data.qpos[0:3]
-        # alive_bonus = 1.0
-        # reward = ((posafter - posbefore) / self.dt)
-        # reward += alive_bonus
-        # reward -= 1e-3 * np.square(a).sum()
-        # done = not (height > 0.8 and height < 2.0 and ang > -1.0 and ang < 1.0)
-        # ob = self._get_obs()
         reward_ctrl = - 1e-3 * np.square(action).sum()
         reward_run = ob[8]
         reward = reward_run + reward_ctrl + 1
