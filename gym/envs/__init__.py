@@ -261,6 +261,12 @@ register(
 )
 
 register(
+    id='CheetahRun-v0',
+    entry_point='gym.envs.mujoco:CheetahRunEnv',
+    max_episode_steps=1000,
+)
+
+register(
     id='Hopper-v2',
     entry_point='gym.envs.mujoco:HopperEnv',
     max_episode_steps=1000,
